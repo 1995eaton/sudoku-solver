@@ -3,7 +3,7 @@ make all
 
 PUZZLES=(
 ./boards/hard.txt
-./boards/hard-2.txt
+./boards/50k.txt
 ./boards/project-euler-96.txt
 )
 
