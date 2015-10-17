@@ -105,7 +105,7 @@ class Sudoku {
       }
       int state[81];
       std::copy(*board, *board + 81, state);
-      for (int mask = *(*moves + n); mask & 511; mask &= mask--) {
+      for (int mask = *(*moves + n); mask & 511; mask &= mask - 1) {
         *(*board + n) = __builtin_ffs(mask);
         logic();
         backtrack();
