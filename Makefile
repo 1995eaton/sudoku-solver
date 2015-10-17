@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-fopenmp -std=c++14 -msse4.1 -march=native -Ofast -Wall -Werror -Wextra -pedantic
+CXXFLAGS=-fopenmp -std=c++14 -march=native -Ofast -Wall -Wextra -pedantic
 SRC=sudoku.cc
 OBJ=$(SRC:.cc=.o)
 EXE=sudoku

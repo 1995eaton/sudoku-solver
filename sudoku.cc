@@ -1,6 +1,5 @@
 #include <iostream>
 #include <sstream>
-#include <fstream>
 #include <vector>
 #include <omp.h>
 
@@ -13,22 +12,25 @@ class Sudoku {
 
     int get_candidates(int x, int y) {
       int mask = 0;
-      for (int i = 0; i < 9; i++) {
-        mask |= (1 << (board[i][x] - 1));
-        mask |= (1 << (board[y][i] - 1));
-        mask |= (1 << (board[y / 3 * 3 + i / 3][x / 3 * 3 + i % 3] - 1));
-      }
-      return 511 & ~mask;
+      for (int i = 0; i < 9; i++)
+        mask |= (1 << board[i][x]) | (1 << board[y][i]);
+      int *sp = *board + y / 3 * 27 + x / 3 * 3;
+      for (int i = 0; i < 3; i++, sp += 9)
+        mask |= (1 << *sp) | (1 << *(sp + 1)) | (1 << *(sp + 2));
+      return 511 & ~(mask >> 1);
     }
-    bool solve_hidden_block(const int blx, const int bly) {
+
+    bool solve_hidden_block(int blx, int bly) {
+      blx *= 3;
+      bly *= 3;
       std::fill(hcnt, hcnt + 9, 0);
-      for (int _y = bly * 3; _y < bly * 3 + 3; _y++) {
-        for (int _x = blx * 3; _x < blx *3 + 3; _x++) {
-          if (!board[_y][_x]) {
+      for (int y = bly; y < bly + 3; y++) {
+        for (int x = blx; x < blx + 3; x++) {
+          if (!board[y][x]) {
             for (int n = 0; n < 9; n++) {
-              if (hcnt[n] < 2 && moves[_y][_x] & (1 << n)) {
+              if (hcnt[n] < 2 && (moves[y][x] & (1 << n))) {
                 hcnt[n]++;
-                hloc[n] = _y * 9 + _x;
+                hloc[n] = y * 9 + x;
               }
             }
           }
@@ -42,7 +44,8 @@ class Sudoku {
       }
       return false;
     }
-    inline void logic_nonhidden_matches() {
+
+    void logic_nonhidden_matches() {
       bool match_found = false;
       do {
         match_found = false;
@@ -50,6 +53,8 @@ class Sudoku {
           for (int x = 0; x < 9; x++) {
             if (board[y][x] == 0) {
               if (__builtin_popcount(moves[y][x] = get_candidates(x, y)) == 1) {
+                // index of least significant bit + 1
+                // e.g. 0b001100000 = 6
                 board[y][x] = __builtin_ffs(moves[y][x]);
                 match_found = true;
               }
@@ -58,7 +63,8 @@ class Sudoku {
         }
       } while (match_found);
     }
-    inline bool logic_hidden_matches() {
+
+    bool logic_hidden_matches() {
       bool match_found = false;
       for (int y = 0; y < 3; y++) {
         for (int x = 0; x < 3; x++) {
@@ -67,33 +73,29 @@ class Sudoku {
       }
       return match_found;
     }
+
     void logic() {
       do logic_nonhidden_matches();
       while (logic_hidden_matches());
     }
-    bool check_pos(const int n, const int x, const int y) {
-      for (int i = 0; i < 9; i++) {
-        if (board[i][x] == n || board[y][i] == n ||
-            board[y / 3 * 3 + i / 3][x / 3 * 3 + i % 3] == n) {
-          return false;
-        }
-      }
-      return true;
-    }
+
+    // get offset of first empty tile in the board
     int get_n() {
-      int low = 10, lown = -1;
-      for (int n = 0; n < 81; n++) {
-        if (*(*board + n) == 0) {
-          int b = __builtin_popcount(*(*moves + n));
+      int low = 10, n = -1;
+      for (int i = 0; i < 81; i++) {
+        if (*(*board + i) == 0) {
+          // number of bits in a number
+          int b = __builtin_popcount(*(*moves + i));
           if (b < low) {
             low = b;
-            lown = n;
+            n = i;
           }
         }
       }
-      return lown;
+      return n;
     }
-    inline void backtrack() {
+
+    void backtrack() {
       int n = get_n();
       if (n == -1) {
         solved = true;
@@ -104,7 +106,7 @@ class Sudoku {
       int state[81];
       std::copy(*board, *board + 81, state);
       for (int i = 0; i < 9; i++) {
-        if ((moves[y][x] & (1 << i)) && check_pos(i + 1, x, y)) {
+        if (moves[y][x] & (1 << i)) {
           board[y][x] = i + 1;
           logic();
           backtrack();
@@ -126,9 +128,11 @@ class Sudoku {
         bp++;
       }
     }
+
     Sudoku(const std::string& nums) {
       apply_board(nums);
     }
+
     std::string str() {
       std::ostringstream res;
       for (int y = 0; y < 9; y++) {
@@ -142,6 +146,7 @@ class Sudoku {
       res << "+-------+-------+-------+\n";
       return res.str();
     }
+
     std::string lstr() {
       std::ostringstream res;
       for (int y = 0; y < 9; y++) {
@@ -151,6 +156,7 @@ class Sudoku {
       }
       return res.str();
     }
+
     void solve() {
       logic();
       backtrack();
