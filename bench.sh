@@ -1,7 +1,8 @@
 #!/usr/bin/env zsh
 
+BENCHFILE=./boards/hard-bench.txt
 cd "$(dirname $0)"
 make
 
-time ./sudoku -s < ./boards/50k.txt > /dev/null
-time qqwing --solve --csv < ./boards/50k.txt > /dev/null
+time ./sudoku -s < "$BENCHFILE" > /dev/null
+time qqwing --solve --csv < "$BENCHFILE" > /dev/null

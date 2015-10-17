@@ -13,10 +13,11 @@ class Sudoku {
     int get_candidates(int x, int y) {
       int mask = 0;
       for (int i = 0; i < 9; i++)
-        mask |= (1 << board[i][x]) | (1 << board[y][i]);
+        mask |= (1 << board[i][x]), mask |= (1 << board[y][i]);
       int *sp = *board + y / 3 * 27 + x / 3 * 3;
-      for (int i = 0; i < 3; i++, sp += 9)
-        mask |= (1 << *sp) | (1 << *(sp + 1)) | (1 << *(sp + 2));
+               mask |= (1 << *sp) | (1 << *(sp + 1)) | (1 << *(sp + 2));
+      sp += 9; mask |= (1 << *sp) | (1 << *(sp + 1)) | (1 << *(sp + 2));
+      sp += 9; mask |= (1 << *sp) | (1 << *(sp + 1)) | (1 << *(sp + 2));
       return 511 & ~(mask >> 1);
     }
 
@@ -28,7 +29,7 @@ class Sudoku {
         for (int x = blx; x < blx + 3; x++) {
           if (!board[y][x]) {
             for (int n = 0; n < 9; n++) {
-              if (hcnt[n] < 2 && (moves[y][x] & (1 << n))) {
+              if ((moves[y][x] & (1 << n)) && hcnt[n] < 2) {
                 hcnt[n]++;
                 hloc[n] = y * 9 + x;
               }
@@ -45,7 +46,7 @@ class Sudoku {
       return false;
     }
 
-    void logic_nonhidden_matches() {
+    inline void logic_nonhidden_matches() {
       bool match_found = false;
       do {
         match_found = false;
@@ -64,19 +65,20 @@ class Sudoku {
       } while (match_found);
     }
 
-    bool logic_hidden_matches() {
-      bool match_found = false;
-      for (int y = 0; y < 3; y++) {
-        for (int x = 0; x < 3; x++) {
-          match_found |= solve_hidden_block(x, y);
-        }
-      }
-      return match_found;
+    inline bool logic_hidden_matches() {
+      return   solve_hidden_block(0, 0)
+             | solve_hidden_block(0, 1)
+             | solve_hidden_block(0, 2)
+             | solve_hidden_block(1, 0)
+             | solve_hidden_block(1, 1)
+             | solve_hidden_block(1, 2)
+             | solve_hidden_block(2, 0)
+             | solve_hidden_block(2, 1)
+             | solve_hidden_block(2, 2);
     }
 
     void logic() {
-      do logic_nonhidden_matches();
-      while (logic_hidden_matches());
+      while (logic_nonhidden_matches(), logic_hidden_matches());
     }
 
     // get offset of first empty tile in the board
@@ -101,19 +103,15 @@ class Sudoku {
         solved = true;
         return;
       }
-      int x = n % 9,
-          y = n / 9;
       int state[81];
       std::copy(*board, *board + 81, state);
-      for (int i = 0; i < 9; i++) {
-        if (moves[y][x] & (1 << i)) {
-          board[y][x] = i + 1;
-          logic();
-          backtrack();
-          if (solved)
-            return;
-          std::copy(state, state + 81, *board);
-        }
+      for (int mask = *(*moves + n); mask & 511; mask &= mask--) {
+        *(*board + n) = __builtin_ffs(mask);
+        logic();
+        backtrack();
+        if (solved)
+          return;
+        std::copy(state, state + 81, *board);
       }
     }
 
