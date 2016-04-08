@@ -39,7 +39,7 @@ bool Sudoku::solve_hidden_block(int blx, int bly) {
     return false;
 }
 
-inline void Sudoku::logic_nonhidden_matches() {
+void Sudoku::logic_nonhidden_matches() {
     bool match_found = false;
     do {
         match_found = false;
@@ -47,8 +47,7 @@ inline void Sudoku::logic_nonhidden_matches() {
             for (int x = 0; x < 9; x++) {
                 if (board[y][x] == 0) {
                     if (__builtin_popcount(moves[y][x] = get_candidates(x, y)) == 1) {
-                        // index of least significant bit + 1
-                        // e.g. 0b001100000 = 6
+                        // Index of least significant bit + 1
                         board[y][x] = __builtin_ffs(moves[y][x]);
                         match_found = true;
                     }
@@ -58,28 +57,28 @@ inline void Sudoku::logic_nonhidden_matches() {
     } while (match_found);
 }
 
-inline bool Sudoku::logic_hidden_matches() {
+bool Sudoku::logic_hidden_matches() {
     return   solve_hidden_block(0, 0)
-        | solve_hidden_block(0, 1)
-        | solve_hidden_block(0, 2)
-        | solve_hidden_block(1, 0)
-        | solve_hidden_block(1, 1)
-        | solve_hidden_block(1, 2)
-        | solve_hidden_block(2, 0)
-        | solve_hidden_block(2, 1)
-        | solve_hidden_block(2, 2);
+           | solve_hidden_block(0, 1)
+           | solve_hidden_block(0, 2)
+           | solve_hidden_block(1, 0)
+           | solve_hidden_block(1, 1)
+           | solve_hidden_block(1, 2)
+           | solve_hidden_block(2, 0)
+           | solve_hidden_block(2, 1)
+           | solve_hidden_block(2, 2);
 }
 
 void Sudoku::logic() {
     while (logic_nonhidden_matches(), logic_hidden_matches());
 }
 
-// get offset of first empty tile in the board
+// Get offset of first empty tile in the board
 int Sudoku::get_n() const {
     int low = 10, n = -1;
     for (int i = 0; i < 81; i++) {
         if (*(*board + i) == 0) {
-            // number of bits in a number
+            // Hamming weight of a binary number
             int b = __builtin_popcount(*(*moves + i));
             if (b < low) {
                 low = b;
